@@ -1,0 +1,106 @@
+-- settings
+local settings = {
+    defaultcolor = Color3.fromRGB(255, 0, 0),
+    teamcheck = false,
+    teamcolor = true
+}
+
+-- services
+local runService = game:GetService("RunService")
+local players = game:GetService("Players")
+local userInputService = game:GetService("UserInputService")
+
+-- variables
+local localPlayer = players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- functions
+local newVector2 = Vector2.new
+local newDrawing = Drawing.new
+local wtvp = function(position)
+    local screenPos, visible = camera:WorldToViewportPoint(position)
+    return newVector2(screenPos.X, screenPos.Y), visible, screenPos.Z
+end
+
+local espEnabled = false
+local espCache = {}
+
+local function createEsp(player)
+    local drawings = {}
+
+    drawings.name = newDrawing("Text")
+    drawings.name.Size = 18
+    drawings.name.Center = true
+    drawings.name.Outline = true
+    drawings.name.Color = settings.defaultcolor
+    drawings.name.Visible = false
+
+    espCache[player] = drawings
+end
+
+local function removeEsp(player)
+    if espCache[player] then
+        espCache[player].name:Remove()
+        espCache[player] = nil
+    end
+end
+
+local function updateEsp(player, esp)
+    local character = player.Character
+    local head = character and character:FindFirstChild("Head")
+    if head then
+        local position, visible, depth = wtvp(head.Position + Vector3.new(0, 1.5, 0)) -- Adjust to position the name above the head
+        esp.name.Visible = visible and espEnabled
+
+        if visible and espEnabled then
+            local x, y = position.X, position.Y
+            esp.name.Position = newVector2(x, y)
+            esp.name.Text = player.Name
+            esp.name.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
+        end
+    else
+        esp.name.Visible = false
+    end
+end
+
+local function toggleESP()
+    espEnabled = not espEnabled
+    for player, drawings in pairs(espCache) do
+        drawings.name.Visible = espEnabled and (not settings.teamcheck or player.Team ~= localPlayer.Team)
+    end
+end
+
+-- Initialize ESP for existing players
+for _, player in ipairs(players:GetPlayers()) do
+    if player ~= localPlayer then
+        createEsp(player)
+    end
+end
+
+-- Handle new players joining
+players.PlayerAdded:Connect(function(player)
+    if player ~= localPlayer then
+        createEsp(player)
+    end
+end)
+
+-- Handle players leaving
+players.PlayerRemoving:Connect(function(player)
+    removeEsp(player)
+end)
+
+-- Update ESP visibility on render step
+runService.RenderStepped:Connect(function()
+    for player, drawings in pairs(espCache) do
+        if player ~= localPlayer then
+            updateEsp(player, drawings)
+        end
+    end
+end)
+
+-- Listen for "T" key press to toggle ESP
+userInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.T then
+        toggleESP()
+    end
+end)
