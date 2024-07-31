@@ -1,20 +1,17 @@
--- settings
+
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
     teamcolor = true
 }
 
--- services
 local runService = game:GetService("RunService")
 local players = game:GetService("Players")
 local userInputService = game:GetService("UserInputService")
 
--- variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- functions
 local newVector2 = Vector2.new
 local newDrawing = Drawing.new
 local wtvp = function(position)
@@ -49,7 +46,7 @@ local function updateEsp(player, esp)
     local character = player.Character
     local head = character and character:FindFirstChild("Head")
     if head then
-        local position, visible, depth = wtvp(head.Position + Vector3.new(0, 1.5, 0)) -- Adjust to position the name above the head
+        local position, visible, depth = wtvp(head.Position + Vector3.new(0, 1.5, 0))
         esp.name.Visible = visible and espEnabled
 
         if visible and espEnabled then
@@ -70,26 +67,26 @@ local function toggleESP()
     end
 end
 
--- Initialize ESP for existing players
+
 for _, player in ipairs(players:GetPlayers()) do
     if player ~= localPlayer then
         createEsp(player)
     end
 end
 
--- Handle new players joining
+
 players.PlayerAdded:Connect(function(player)
     if player ~= localPlayer then
         createEsp(player)
     end
 end)
 
--- Handle players leaving
+
 players.PlayerRemoving:Connect(function(player)
     removeEsp(player)
 end)
 
--- Update ESP visibility on render step
+
 runService.RenderStepped:Connect(function()
     for player, drawings in pairs(espCache) do
         if player ~= localPlayer then
@@ -98,7 +95,7 @@ runService.RenderStepped:Connect(function()
     end
 end)
 
--- Listen for "T" key press to toggle ESP
+
 userInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.T then
         toggleESP()
